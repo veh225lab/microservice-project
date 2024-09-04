@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  workflows-service:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - APP_NAME=workflows-service
+    command: yarn run start:dev -- workflows-service
+    environment:
+      - POSTGRES_HOST=workflows-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=workflows
+    volumes:
+      - ./libs:/usr/src/app/lib
+      - ./package.json:/usr/src/app/package.json
+      - ./tsconfig.json:/usr/src/app/tsconfig.json
+      - ./apps/workflows-service:/usr/src/app/apps/workflows-service
+    depends_on:
+      - workflows-db
+  workflows-db:
+    image: postgres:13.2-alpine
