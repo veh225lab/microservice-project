@@ -1,26 +1,55 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateWorkflowDto } from './dto/create-workflow.dto';
 import { UpdateWorkflowDto } from './dto/update-workflow.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Workflow } from './entities/workflow.entity';
 
 @Injectable()
 export class WorkflowsService {
-  create(createWorkflowDto: CreateWorkflowDto) {
-    return 'This action adds a new workflow';
+  constructor(
+    @InjectRepository(Workflow)
+    private readonly workflowsRepository: Repository<Workflow>,
+  ) {}
+
+  async create(createWorkflowDto: CreateWorkflowDto): Promise<Workflow> {
+    const workflow = this.workflowsRepository.create({
+      ...createWorkflowDto,
+    });
+
+    return await this.workflowsRepository.save(workflow);
   }
 
-  findAll() {
-    return `This action returns all workflows`;
+  async findAll(): Promise<Workflow[]> {
+    return await this.workflowsRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} workflow`;
+  async findOne(id: number): Promise<Workflow> {
+    const workflow = await this.workflowsRepository.findOne({ where: { id } });
+    if (!workflow) {
+      throw new NotFoundException(`Workflow #${id} does not exist.`);
+    }
+    return workflow;
   }
 
-  update(id: number, updateWorkflowDto: UpdateWorkflowDto) {
-    return `This action updates a #${id} workflow`;
+  async update(
+    id: number,
+    updateWorkflowDto: UpdateWorkflowDto,
+  ): Promise<Workflow> {
+    const building = await this.workflowsRepository.preload({
+      id: +id,
+      ...updateWorkflowDto,
+    });
+
+    if (!building) {
+      throw new NotFoundException(`Workflow #${id} does not exist.`);
+    }
+
+    return await this.workflowsRepository.save(building);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} workflow`;
+  async remove(id: number): Promise<Workflow> {
+    const building = await this.findOne(id);
+    return this.workflowsRepository.remove(building);
   }
 }
